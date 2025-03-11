@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyPuzzle - HTML5 Puzzle Game</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>MyPuzzle</h1>
+            <p>Upload an image and solve the puzzle!</p>
+        </header>
+
+        <main>
+            <div class="controls">
+                <div class="upload-container">
+                    <label for="imageUpload" class="upload-btn">
+                        <i class="fas fa-upload"></i> Upload Image
+                    </label>
+                    <input type="file" id="imageUpload" accept="image/*" hidden>
+                </div>
+                
+                <div class="difficulty-container">
+                    <label for="difficulty">Difficulty:</label>
+                    <select id="difficulty">
+                        <option value="3">Easy (3×3)</option>
+                        <option value="4" selected>Medium (4×4)</option>
+                        <option value="5">Hard (5×5)</option>
+                        <option value="6">Expert (6×6)</option>
+                    </select>
+                </div>
+
+                <button id="startGame" disabled>Start Game</button>
+                <button id="resetGame" disabled>Reset</button>
+            </div>
+
+            <div class="game-area">
+                <div id="original-image" class="image-preview">
+                    <p>Your image will appear here</p>
+                </div>
+                <div id="puzzle-container">
+                    <p>Puzzle will be generated here</p>
+                </div>
+            </div>
+
+            <div id="completion-message" class="hidden">
+                <div class="message-content">
+                    <h2>Congratulations!</h2>
+                    <p>You've completed the puzzle!</p>
+                    <button id="playAgain">Play Again</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2023 MyPuzzle - HTML5 Puzzle Game</p>
+        </footer>
+    </div>
+
+    <div id="loading-overlay" class="hidden">
+        <div class="spinner"></div>
+        <p>Processing image...</p>
+    </div>
+
+    <script src="js/puzzle.js"></script>
+</body>
+</html> 

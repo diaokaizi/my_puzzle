@@ -1,88 +1,39 @@
-# MyPuzzle - 拼图游戏应用
+# MyPuzzle - HTML5 Puzzle Game
 
-MyPuzzle是一个美观简洁的Flutter拼图游戏应用，允许用户上传本地图片并将其转换为拼图游戏。
+An interactive puzzle game that allows users to upload their own images and solve them as puzzles.
 
-## 功能特点
+## Features
 
-- 从设备相册选择或使用相机拍摄图片
-- 支持多种难度级别（3x3、4x4、5x5、6x6）
-- 实时计时和移动次数统计
-- 查看原图功能
-- 美观的游戏完成界面和统计信息
+- Upload local images and convert them into puzzles
+- Automatically split images into movable puzzle pieces
+- Randomly shuffle puzzle pieces
+- Drag and drop functionality for moving pieces
+- Auto-snap when adjacent pieces are correctly positioned
+- Celebration animation upon puzzle completion
 
-## 截图
+## Technologies Used
 
-(应用截图将在应用完成后添加)
+- HTML5
+- CSS3
+- JavaScript (Vanilla)
+- HTML5 Canvas for image processing
 
-## 技术栈
+## How to Use
 
-- Flutter框架
-- Provider状态管理
-- 图片处理和拼图算法
-- 动画效果
+1. Open `index.html` in your browser
+2. Click "Upload Image" to select an image from your device
+3. Choose difficulty level (number of pieces)
+4. Drag and drop puzzle pieces to solve the puzzle
+5. When all pieces are correctly placed, you'll see a completion message
 
-## 安装和运行
+## Browser Compatibility
 
-### 前提条件
+This application works on all modern browsers that support HTML5, including:
+- Chrome
+- Firefox
+- Safari
+- Edge
 
-- 安装Flutter SDK（2.0.0或更高版本）
-- 安装Android Studio或VS Code
-- 配置好Flutter开发环境
+## License
 
-### 安装步骤
-
-1. 克隆仓库
-   ```
-   git clone https://github.com/yourusername/my_puzzle.git
-   ```
-
-2. 进入项目目录
-   ```
-   cd my_puzzle
-   ```
-
-3. 获取依赖
-   ```
-   flutter pub get
-   ```
-
-4. 运行应用
-   ```
-   flutter run
-   ```
-
-## 项目结构
-
-```
-lib/
-  ├── main.dart              # 应用入口
-  ├── models/                # 数据模型
-  │   └── puzzle_model.dart  # 拼图游戏模型
-  ├── screens/               # 页面
-  │   ├── home_screen.dart           # 主页面
-  │   ├── image_select_screen.dart   # 图片选择页面
-  │   ├── difficulty_select_screen.dart  # 难度选择页面
-  │   ├── game_screen.dart           # 游戏页面
-  │   └── completion_screen.dart     # 完成页面
-  ├── utils/                 # 工具类
-  │   ├── theme.dart         # 主题和样式
-  │   └── image_splitter.dart  # 图片切割工具
-  └── widgets/               # 可复用组件
-      └── custom_button.dart  # 自定义按钮
-```
-
-## 使用说明
-
-1. 启动应用，点击"开始游戏"按钮
-2. 从相册选择图片或使用相机拍摄
-3. 选择游戏难度（3x3、4x4、5x5或6x6）
-4. 开始拼图游戏，通过点击拼图块移动它们
-5. 完成拼图后，查看游戏统计信息
-
-## 贡献
-
-欢迎提交问题和功能请求！如果您想贡献代码，请先开一个issue讨论您想要更改的内容。
-
-## 许可证
-
-[MIT](LICENSE)
+MIT 
