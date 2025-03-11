@@ -25,7 +25,8 @@ let gameState = {
     puzzleHeight: 0,
     isPlaying: false,
     correctPieces: 0,
-    totalPieces: 0
+    totalPieces: 0,
+    mergedGroups: []
 };
 
 // Event Listeners
@@ -96,6 +97,7 @@ function startGame() {
     gameState.isPlaying = true;
     gameState.correctPieces = 0;
     gameState.totalPieces = gameState.difficulty * gameState.difficulty;
+    gameState.mergedGroups = [];
     
     // Enable reset button
     resetGameBtn.disabled = false;
@@ -184,12 +186,17 @@ function createPuzzlePieces() {
                     correctY: correctY,
                     width: gameState.pieceWidth,
                     height: gameState.pieceHeight,
-                    image: pieceCanvas.toDataURL()
+                    image: pieceCanvas.toDataURL(),
+                    groupId: row * gameState.difficulty + col,
+                    adjacentPieces: []
                 };
                 
                 gameState.pieces.push(piece);
             }
         }
+        
+        // Calculate each piece's adjacent pieces
+        calculateAdjacentPieces();
         
         // Shuffle pieces
         shufflePieces();
@@ -199,6 +206,43 @@ function createPuzzlePieces() {
     };
     
     tempImg.src = gameState.originalImageSrc;
+}
+
+// Calculate each piece's adjacent pieces
+function calculateAdjacentPieces() {
+    gameState.pieces.forEach(piece => {
+        // Top piece
+        if (piece.row > 0) {
+            piece.adjacentPieces.push({
+                id: (piece.row - 1) * gameState.difficulty + piece.col,
+                direction: 'top'
+            });
+        }
+        
+        // Bottom piece
+        if (piece.row < gameState.difficulty - 1) {
+            piece.adjacentPieces.push({
+                id: (piece.row + 1) * gameState.difficulty + piece.col,
+                direction: 'bottom'
+            });
+        }
+        
+        // Left piece
+        if (piece.col > 0) {
+            piece.adjacentPieces.push({
+                id: piece.row * gameState.difficulty + (piece.col - 1),
+                direction: 'left'
+            });
+        }
+        
+        // Right piece
+        if (piece.col < gameState.difficulty - 1) {
+            piece.adjacentPieces.push({
+                id: piece.row * gameState.difficulty + (piece.col + 1),
+                direction: 'right'
+            });
+        }
+    });
 }
 
 // Shuffle Pieces
@@ -229,29 +273,95 @@ function renderPieces() {
     // Clear puzzle container
     puzzleContainer.innerHTML = '';
     
-    // Create and append piece elements
-    gameState.pieces.forEach(piece => {
-        const pieceElement = document.createElement('div');
-        pieceElement.className = 'puzzle-piece';
-        pieceElement.dataset.id = piece.id;
+    // 获取所有唯一的组ID
+    const uniqueGroupIds = [...new Set(gameState.pieces.map(piece => piece.groupId))];
+    
+    // 为每个组创建一个元素
+    uniqueGroupIds.forEach(groupId => {
+        // 获取该组的所有碎片
+        const groupPieces = gameState.pieces.filter(piece => piece.groupId === groupId);
         
-        // Set piece position and dimensions
-        pieceElement.style.width = `${piece.width}px`;
-        pieceElement.style.height = `${piece.height}px`;
-        pieceElement.style.left = `${piece.x}px`;
-        pieceElement.style.top = `${piece.y}px`;
-        pieceElement.style.backgroundImage = `url(${piece.image})`;
-        
-        // Check if piece is in correct position
-        if (piece.x === piece.correctX && piece.y === piece.correctY) {
-            pieceElement.classList.add('correct');
+        // 如果组中只有一个碎片，直接渲染
+        if (groupPieces.length === 1) {
+            const piece = groupPieces[0];
+            const pieceElement = document.createElement('div');
+            pieceElement.className = 'puzzle-piece';
+            pieceElement.dataset.id = piece.id;
+            pieceElement.dataset.groupId = piece.groupId;
+            
+            // Set piece position and dimensions
+            pieceElement.style.width = `${piece.width}px`;
+            pieceElement.style.height = `${piece.height}px`;
+            pieceElement.style.left = `${piece.x}px`;
+            pieceElement.style.top = `${piece.y}px`;
+            pieceElement.style.backgroundImage = `url(${piece.image})`;
+            
+            // Add drag functionality
+            makeDraggable(pieceElement);
+            
+            // Append to puzzle container
+            puzzleContainer.appendChild(pieceElement);
+        } else {
+            // 创建合并组的元素
+            const groupElement = document.createElement('div');
+            groupElement.className = 'puzzle-piece merged-group';
+            groupElement.dataset.groupId = groupId;
+            
+            // 找出组中的第一个碎片作为参考点
+            const firstPiece = groupPieces[0];
+            
+            // 计算合并组的尺寸和位置
+            let minX = Infinity, minY = Infinity;
+            let maxX = -Infinity, maxY = -Infinity;
+            
+            // 找出组中所有碎片的边界
+            groupPieces.forEach(piece => {
+                const pieceRight = piece.x + piece.width;
+                const pieceBottom = piece.y + piece.height;
+                
+                minX = Math.min(minX, piece.x);
+                minY = Math.min(minY, piece.y);
+                maxX = Math.max(maxX, pieceRight);
+                maxY = Math.max(maxY, pieceBottom);
+            });
+            
+            // 设置合并组的尺寸和位置
+            const groupWidth = maxX - minX;
+            const groupHeight = maxY - minY;
+            
+            groupElement.style.width = `${groupWidth}px`;
+            groupElement.style.height = `${groupHeight}px`;
+            groupElement.style.left = `${minX}px`;
+            groupElement.style.top = `${minY}px`;
+            
+            // 为合并组中的每个碎片创建一个子元素
+            groupPieces.forEach(piece => {
+                const subPieceElement = document.createElement('div');
+                subPieceElement.className = 'sub-piece';
+                subPieceElement.dataset.id = piece.id;
+                
+                // 计算子碎片相对于合并组的位置
+                const relativeX = piece.x - minX;
+                const relativeY = piece.y - minY;
+                
+                // 设置子碎片的样式
+                subPieceElement.style.width = `${piece.width}px`;
+                subPieceElement.style.height = `${piece.height}px`;
+                subPieceElement.style.left = `${relativeX}px`;
+                subPieceElement.style.top = `${relativeY}px`;
+                subPieceElement.style.backgroundImage = `url(${piece.image})`;
+                subPieceElement.style.position = 'absolute';
+                
+                // 添加到合并组
+                groupElement.appendChild(subPieceElement);
+            });
+            
+            // 添加拖拽功能
+            makeDraggable(groupElement);
+            
+            // 添加到拼图容器
+            puzzleContainer.appendChild(groupElement);
         }
-        
-        // Add drag functionality
-        makeDraggable(pieceElement);
-        
-        // Append to puzzle container
-        puzzleContainer.appendChild(pieceElement);
     });
 }
 
@@ -364,54 +474,155 @@ function makeDraggable(element) {
 
 // Check Piece Position
 function checkPiecePosition(element) {
-    const pieceId = parseInt(element.dataset.id);
-    const piece = gameState.pieces.find(p => p.id === pieceId);
+    // 获取元素的组ID
+    const groupId = parseInt(element.dataset.groupId);
     
-    // Get current position
+    // 获取该组的所有碎片
+    const groupPieces = gameState.pieces.filter(piece => piece.groupId === groupId);
+    
+    // 获取当前位置
     const currentX = parseInt(element.style.left);
     const currentY = parseInt(element.style.top);
     
-    // Update piece data with exact position (no snapping to grid)
-    piece.x = currentX;
-    piece.y = currentY;
-    
-    // Check if piece is close enough to its correct position
-    const isCloseToCorrect = (
-        Math.abs(piece.x - piece.correctX) < gameState.pieceWidth / 4 && 
-        Math.abs(piece.y - piece.correctY) < gameState.pieceHeight / 4
-    );
-    
-    // If piece is close to correct position, snap it
-    if (isCloseToCorrect) {
-        // Snap to correct position
-        element.style.left = `${piece.correctX}px`;
-        element.style.top = `${piece.correctY}px`;
-        
-        // Update piece data
-        piece.x = piece.correctX;
-        piece.y = piece.correctY;
-        
-        // Add correct class
-        element.classList.add('correct');
-        
-        // Check if this is a newly correct piece
-        if (!element.classList.contains('counted')) {
-            element.classList.add('counted');
-            gameState.correctPieces++;
-            
-            // Check if puzzle is complete
-            if (gameState.correctPieces === gameState.totalPieces) {
-                setTimeout(showCompletionMessage, 500);
+    // 更新组中所有碎片的位置
+    groupPieces.forEach(piece => {
+        if (groupPieces.length === 1) {
+            // 单个碎片直接更新位置
+            piece.x = currentX;
+            piece.y = currentY;
+        } else {
+            // 合并组中的碎片，需要计算相对位置
+            const subPieceElement = element.querySelector(`[data-id="${piece.id}"]`);
+            if (subPieceElement) {
+                const relativeX = parseInt(subPieceElement.style.left);
+                const relativeY = parseInt(subPieceElement.style.top);
+                piece.x = currentX + relativeX;
+                piece.y = currentY + relativeY;
             }
         }
-    } else {
-        element.classList.remove('correct');
-        
-        // If piece was previously correct, decrement counter
-        if (element.classList.contains('counted')) {
-            element.classList.remove('counted');
-            gameState.correctPieces--;
+    });
+    
+    // 检查是否可以与其他碎片合并
+    checkForMerge(groupId);
+    
+    // 检查拼图是否完成
+    checkPuzzleCompletion();
+}
+
+// 新增：检查是否可以与其他碎片合并
+function checkForMerge(groupId) {
+    // 获取该组的所有碎片
+    const groupPieces = gameState.pieces.filter(piece => piece.groupId === groupId);
+    
+    // 遍历组中的每个碎片
+    for (const piece of groupPieces) {
+        // 检查每个相邻的碎片
+        for (const adjacent of piece.adjacentPieces) {
+            // 获取相邻的碎片
+            const adjacentPiece = gameState.pieces.find(p => p.id === adjacent.id);
+            
+            // 如果相邻碎片已经在同一组中，跳过
+            if (adjacentPiece.groupId === piece.groupId) continue;
+            
+            // 检查两个碎片是否足够接近以合并
+            const canMerge = checkPiecesCanMerge(piece, adjacentPiece, adjacent.direction);
+            
+            if (canMerge) {
+                // 合并两个组
+                mergePieceGroups(piece.groupId, adjacentPiece.groupId);
+                
+                // 播放合并音效或动画效果
+                playMergeEffect();
+                
+                // 重新渲染碎片
+                renderPieces();
+                
+                // 由于已经合并并重新渲染，退出函数
+                return;
+            }
         }
+    }
+}
+
+// 新增：检查两个碎片是否可以合并
+function checkPiecesCanMerge(piece1, piece2, direction) {
+    const threshold = Math.min(gameState.pieceWidth, gameState.pieceHeight) / 5; // 合并阈值
+    
+    switch (direction) {
+        case 'top':
+            // piece2 应该在 piece1 的上方
+            return (
+                Math.abs(piece1.x - piece2.x) < threshold &&
+                Math.abs(piece1.y - piece2.y - piece2.height) < threshold
+            );
+        case 'bottom':
+            // piece2 应该在 piece1 的下方
+            return (
+                Math.abs(piece1.x - piece2.x) < threshold &&
+                Math.abs(piece1.y + piece1.height - piece2.y) < threshold
+            );
+        case 'left':
+            // piece2 应该在 piece1 的左侧
+            return (
+                Math.abs(piece1.x - piece2.x - piece2.width) < threshold &&
+                Math.abs(piece1.y - piece2.y) < threshold
+            );
+        case 'right':
+            // piece2 应该在 piece1 的右侧
+            return (
+                Math.abs(piece1.x + piece1.width - piece2.x) < threshold &&
+                Math.abs(piece1.y - piece2.y) < threshold
+            );
+        default:
+            return false;
+    }
+}
+
+// 新增：合并两个碎片组
+function mergePieceGroups(groupId1, groupId2) {
+    // 获取两个组的所有碎片
+    const group1Pieces = gameState.pieces.filter(piece => piece.groupId === groupId1);
+    const group2Pieces = gameState.pieces.filter(piece => piece.groupId === groupId2);
+    
+    // 将第二组的所有碎片的组ID更改为第一组的ID
+    group2Pieces.forEach(piece => {
+        piece.groupId = groupId1;
+    });
+    
+    // 添加到合并组记录中
+    gameState.mergedGroups.push({
+        groupId: groupId1,
+        pieces: [...group1Pieces, ...group2Pieces].map(p => p.id)
+    });
+}
+
+// 新增：播放合并效果
+function playMergeEffect() {
+    // 添加合并动画效果
+    const mergedGroups = document.querySelectorAll('.merged-group');
+    mergedGroups.forEach(group => {
+        group.classList.add('merging');
+        
+        // 动画结束后移除类
+        setTimeout(() => {
+            group.classList.remove('merging');
+        }, 300);
+    });
+    
+    // 可以在这里添加音效
+    // 例如：
+    // const mergeSound = new Audio('sounds/merge.mp3');
+    // mergeSound.play();
+}
+
+// 新增：检查拼图是否完成
+function checkPuzzleCompletion() {
+    // 获取所有唯一的组ID
+    const uniqueGroupIds = [...new Set(gameState.pieces.map(piece => piece.groupId))];
+    
+    // 如果只有一个组，说明拼图已完成
+    if (uniqueGroupIds.length === 1) {
+        setTimeout(showCompletionMessage, 500);
     }
 }
 
@@ -431,6 +642,7 @@ function resetGame() {
     // Reset game state
     gameState.isPlaying = false;
     gameState.correctPieces = 0;
+    gameState.mergedGroups = []; // 重置合并组
     
     // Clear puzzle container
     puzzleContainer.innerHTML = '<p>Puzzle will be generated here</p>';
